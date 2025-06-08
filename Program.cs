@@ -63,6 +63,7 @@ namespace MiniAccountSystemDB
             app.MapRazorPages();
 
             app.Run();
+            app.Run();
         }
     }
 }

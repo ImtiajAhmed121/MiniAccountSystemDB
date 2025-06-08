@@ -23,11 +23,16 @@ namespace MiniAccountSystemDB.Pages.Accounts
             if (!ModelState.IsValid)
                 return Page();
 
+            // ? Correctly create and open the connection
             using SqlConnection conn = new(_configuration.GetConnectionString("DefaultConnection"));
             conn.Open();
 
-            using SqlCommand cmd = new("INSERT INTO ChartOfAccounts (Name) VALUES (@Name)", conn);
+            // ? Now use the connection in the command
+            using SqlCommand cmd = new("INSERT INTO ChartOfAccounts (Name, AccountType, ParentId) VALUES (@Name, @AccountType, @ParentId)", conn);
             cmd.Parameters.AddWithValue("@Name", Account.Name);
+            cmd.Parameters.AddWithValue("@AccountType", Account.AccountType);
+            cmd.Parameters.AddWithValue("@ParentId", (object?)Account.ParentId ?? DBNull.Value);
+
             cmd.ExecuteNonQuery();
 
             return RedirectToPage("Index");
