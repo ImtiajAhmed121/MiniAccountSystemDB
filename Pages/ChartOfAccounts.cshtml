@@ -1,0 +1,73 @@
+﻿@page
+@model MiniAccountSystemDB.Pages.ChartOfAccountsModel
+@{
+    ViewData["Title"] = "Chart of Accounts";
+}
+
+<h2>Chart of Accounts</h2>
+
+<form method="post">
+    <div class="form-group">
+        <label>Name:</label>
+        <input asp-for="Input.Name" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label>Account Type:</label>
+        <select asp-for="Input.AccountType" class="form-control" required>
+            <option>Asset</option>
+            <option>Liability</option>
+            <option>Equity</option>
+            <option>Income</option>
+            <option>Expense</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Parent Account:</label>
+        <select asp-for="Input.ParentId" class="form-control">
+            <option value="">-- None (Root) --</option>
+            @foreach (var parent in Model.AllAccounts)
+            {
+                <option value="@parent.Id">@parent.Name</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Account</button>
+</form>
+
+<hr />
+<h4>Existing Accounts</h4>
+<hr />
+<h4>Existing Accounts</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Parent</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var acct in Model.AllAccounts)
+        {
+            <tr>
+                <td>@acct.Name</td>
+                <td>@acct.AccountType</td>
+                <td>@(acct.ParentId.HasValue ? acct.ParentId.ToString() : "Root")</td>
+                <td>
+                    <form method="post" style="display:inline">
+                        <input type="hidden" name="ActionType" value="Edit" />
+                        <input type="hidden" name="EditId" value="@acct.Id" />
+                        <button type="submit" class="btn btn-sm btn-warning">Edit</button>
+                    </form>
+                    <form method="post" style="display:inline" onsubmit="return confirm('Are you sure?');">
+                        <input type="hidden" name="ActionType" value="Delete" />
+                        <input type="hidden" name="DeleteId" value="@acct.Id" />
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+

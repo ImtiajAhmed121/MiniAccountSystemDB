@@ -1,0 +1,17 @@
+﻿@page
+@model MiniAccountSystemDB.Pages.Accounts.CreateModel
+@{
+    ViewData["Title"] = "Create New Account";
+}
+
+<h2>Create New Account</h2>
+
+<form method="post">
+    <div class="mb-3">
+        <label asp-for="Account.Name" class="form-label"></label>
+        <input asp-for="Account.Name" class="form-control" />
+        <span asp-validation-for="Account.Name" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+</form>

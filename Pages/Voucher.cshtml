@@ -1,0 +1,79 @@
+﻿@page
+@model MiniAccountSystemDB.Pages.VoucherModel
+@{
+    ViewData["Title"] = "Voucher Entry";
+}
+
+<h2>Voucher Entry</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<form method="post">
+    <div class="mb-3">
+        <label asp-for="VoucherType" class="form-label"></label>
+        <input asp-for="VoucherType" class="form-control" />
+        <span asp-validation-for="VoucherType" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="VoucherDate" class="form-label"></label>
+        <input asp-for="VoucherDate" type="date" class="form-control" />
+        <span asp-validation-for="VoucherDate" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ReferenceNo" class="form-label"></label>
+        <input asp-for="ReferenceNo" class="form-control" />
+        <span asp-validation-for="ReferenceNo" class="text-danger"></span>
+    </div>
+
+    <h4>Entries (Debit & Credit)</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Debit</th>
+                <th>Credit</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Entries.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <select asp-for="Entries[@i].AccountId"
+                                asp-items="Model.AccountList"
+                                class="form-control"
+                                name="Entries[@i].AccountId">
+                            <option value="">-- Select Account --</option>
+                        </select>
+                        <span asp-validation-for="Entries[@i].AccountId" class="text-danger"></span>
+                    </td>
+                    <td>
+                        <input asp-for="Entries[@i].Debit" class="form-control" name="Entries[@i].Debit" />
+                        <span asp-validation-for="Entries[@i].Debit" class="text-danger"></span>
+                    </td>
+                    <td>
+                        <input asp-for="Entries[@i].Credit" class="form-control" name="Entries[@i].Credit" />
+                        <span asp-validation-for="Entries[@i].Credit" class="text-danger"></span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary">Save Voucher</button>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="text-danger mt-3">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+    </div>
+}
