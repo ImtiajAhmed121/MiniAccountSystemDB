@@ -1,18 +1,20 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// ✅ Complete and corrected VoucherModel with Export to Excel functionality
+
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Authorization;
-
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
+using OfficeOpenXml;
 
 namespace MiniAccountSystemDB.Pages
 {
     [Authorize(Roles = "Admin,Accountant")]
-
     public class VoucherModel : PageModel
     {
         private readonly IConfiguration _configuration;
@@ -20,24 +22,15 @@ namespace MiniAccountSystemDB.Pages
         public VoucherModel(IConfiguration configuration)
         {
             _configuration = configuration;
-
-            // Initialize non-nullables
             ReferenceNo = string.Empty;
             VoucherType = string.Empty;
             AccountList = new List<SelectListItem>();
         }
 
-        [BindProperty]
-        public string VoucherType { get; set; }
-
-        [BindProperty]
-        public DateTime VoucherDate { get; set; } = DateTime.Today;
-
-        [BindProperty]
-        public string ReferenceNo { get; set; }
-
-        [BindProperty]
-        public List<VoucherEntry> Entries { get; set; } = new() { new(), new() };
+        [BindProperty] public string VoucherType { get; set; }
+        [BindProperty] public DateTime VoucherDate { get; set; } = DateTime.Today;
+        [BindProperty] public string ReferenceNo { get; set; }
+        [BindProperty] public List<VoucherEntry> Entries { get; set; } = new() { new(), new() };
 
         public List<SelectListItem> AccountList { get; set; }
 
@@ -46,6 +39,14 @@ namespace MiniAccountSystemDB.Pages
             public int AccountId { get; set; }
             public decimal Debit { get; set; }
             public decimal Credit { get; set; }
+        }
+
+        public class VoucherDisplay
+        {
+            public string VoucherNo { get; set; } = string.Empty;
+            public DateTime Date { get; set; }
+            public string Description { get; set; } = string.Empty;
+            public decimal Amount { get; set; }
         }
 
         public void OnGet()
@@ -57,22 +58,12 @@ namespace MiniAccountSystemDB.Pages
         {
             LoadAccounts();
 
-            // Validate entry list
-            if (Entries == null || Entries.Count == 0)
+            if (Entries == null || Entries.Count == 0 || !Entries.Exists(e => e.Debit > 0 || e.Credit > 0))
             {
-                ModelState.AddModelError(string.Empty, "Please enter at least one voucher line.");
+                ModelState.AddModelError(string.Empty, "Please enter valid debit or credit entries.");
                 return Page();
             }
 
-            // Ensure at least one row has a value
-            bool hasValidRow = Entries.Exists(e => e.Debit > 0 || e.Credit > 0);
-            if (!hasValidRow)
-            {
-                ModelState.AddModelError(string.Empty, "Each row must have at least one Debit or Credit value.");
-                return Page();
-            }
-
-            // Validate Debit == Credit
             decimal totalDebit = 0, totalCredit = 0;
             foreach (var entry in Entries)
             {
@@ -86,7 +77,6 @@ namespace MiniAccountSystemDB.Pages
                 return Page();
             }
 
-            // Prepare table-valued parameter
             var entryTable = new DataTable();
             entryTable.Columns.Add("AccountId", typeof(int));
             entryTable.Columns.Add("Debit", typeof(decimal));
@@ -100,7 +90,6 @@ namespace MiniAccountSystemDB.Pages
                 }
             }
 
-            // Insert using stored procedure
             try
             {
                 using SqlConnection conn = new(_configuration.GetConnectionString("DefaultConnection"));
@@ -134,7 +123,6 @@ namespace MiniAccountSystemDB.Pages
         private void LoadAccounts()
         {
             AccountList = new List<SelectListItem>();
-
             using SqlConnection conn = new(_configuration.GetConnectionString("DefaultConnection"));
             conn.Open();
 
@@ -150,5 +138,67 @@ namespace MiniAccountSystemDB.Pages
                 });
             }
         }
+
+        public IActionResult OnPostExport()
+        {
+            var vouchers = LoadVouchers();
+
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("Vouchers");
+
+            worksheet.Cells[1, 1].Value = "Voucher No";
+            worksheet.Cells[1, 2].Value = "Date";
+            worksheet.Cells[1, 3].Value = "Reference No";
+            worksheet.Cells[1, 4].Value = "Amount";
+
+            for (int i = 0; i < vouchers.Count; i++)
+            {
+                var v = vouchers[i];
+                worksheet.Cells[i + 2, 1].Value = v.VoucherNo;
+                worksheet.Cells[i + 2, 2].Value = v.Date.ToString("yyyy-MM-dd");
+                worksheet.Cells[i + 2, 3].Value = v.Description;
+                worksheet.Cells[i + 2, 4].Value = v.Amount;
+            }
+
+            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+            var stream = new MemoryStream(package.GetAsByteArray());
+
+            return File(stream,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Vouchers.xlsx");
+        }
+
+        private List<VoucherDisplay> LoadVouchers()
+        {
+            var result = new List<VoucherDisplay>();
+            using SqlConnection conn = new(_configuration.GetConnectionString("DefaultConnection"));
+            conn.Open();
+
+            using SqlCommand cmd = new(@"
+        SELECT 
+            v.Id AS VoucherNo,
+            v.VoucherDate,
+            v.ReferenceNo,
+            SUM(e.Debit) - SUM(e.Credit) AS Amount
+        FROM dbo.Vouchers v
+        JOIN dbo.VoucherEntries e ON v.Id = e.VoucherId
+        GROUP BY v.Id, v.VoucherDate, v.ReferenceNo
+        ORDER BY v.Id DESC", conn);
+
+            using SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                result.Add(new VoucherDisplay
+                {
+                    VoucherNo = reader["VoucherNo"].ToString() ?? "",
+                    Date = reader.GetDateTime(1),
+                    Description = reader["ReferenceNo"].ToString() ?? "",
+                    Amount = reader.GetDecimal(3)
+                });
+            }
+
+            return result;
+        }
+
     }
 }

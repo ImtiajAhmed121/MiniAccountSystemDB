@@ -36,8 +36,15 @@
 
 <hr />
 <h4>Existing Accounts</h4>
-<hr />
-<h4>Existing Accounts</h4>
+
+@* /// Export to Excel Button OUTSIDE the loop -->
+ *@
+ <form method="post" asp-page-handler="Export">
+    <button type="submit" class="btn btn-success mb-3">
+        📥 Export All Accounts to Excel
+    </button>
+</form>
+
 <table class="table">
     <thead>
         <tr>
@@ -70,4 +77,3 @@
         }
     </tbody>
 </table>
-

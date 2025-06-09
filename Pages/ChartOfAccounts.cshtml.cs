@@ -1,14 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Authorization; // ✅ Add this
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using System.Data;
+using OfficeOpenXml;
+using System.IO;
 
 namespace MiniAccountSystemDB.Pages
 {
-    [Authorize(Roles = "Admin,Accountant")] // ✅ Protect this page with role-based access
+    [Authorize(Roles = "Admin,Accountant")]
     public class ChartOfAccountsModel : PageModel
     {
         private readonly IConfiguration _configuration;
@@ -30,9 +32,9 @@ namespace MiniAccountSystemDB.Pages
         public int? DeleteId { get; set; }
 
         [BindProperty]
-        public AccountInputModel Input { get; set; } = new AccountInputModel();
+        public AccountInputModel Input { get; set; } = new();
 
-        public List<Account> AllAccounts { get; set; } = new List<Account>();
+        public List<Account> AllAccounts { get; set; } = new();
 
         public class Account
         {
@@ -77,10 +79,10 @@ namespace MiniAccountSystemDB.Pages
                 return Page();
             }
 
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (SqlCommand cmd = new SqlCommand("sp_ManageChartOfAccounts", conn))
+                using (var cmd = new SqlCommand("sp_ManageChartOfAccounts", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@Action", EditId.HasValue ? "UPDATE" : "INSERT");
@@ -95,73 +97,95 @@ namespace MiniAccountSystemDB.Pages
             return RedirectToPage();
         }
 
-        private void DeleteAccount(int id)
+        public IActionResult OnPostExport()
         {
-            using (SqlConnection conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand("sp_ManageChartOfAccounts", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@Action", "DELETE");
-                    cmd.Parameters.AddWithValue("@Id", id);
-                    cmd.Parameters.AddWithValue("@Name", DBNull.Value);
-                    cmd.Parameters.AddWithValue("@ParentId", DBNull.Value);
-                    cmd.Parameters.AddWithValue("@AccountType", DBNull.Value);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
+            LoadAccounts();
 
-        private Account? GetAccountById(int id)
-        {
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("ChartOfAccounts");
+
+            // Header row
+            worksheet.Cells[1, 1].Value = "ID";
+            worksheet.Cells[1, 2].Value = "Name";
+            worksheet.Cells[1, 3].Value = "Account Type";
+            worksheet.Cells[1, 4].Value = "Parent ID";
+
+            // Data rows
+            for (int i = 0; i < AllAccounts.Count; i++)
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand("SELECT Id, Name, AccountType, ParentId FROM ChartOfAccounts WHERE Id = @Id", conn))
-                {
-                    cmd.Parameters.AddWithValue("@Id", id);
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            return new Account
-                            {
-                                Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                AccountType = reader.GetString(2),
-                                ParentId = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3)
-                            };
-                        }
-                    }
-                }
+                var acc = AllAccounts[i];
+                worksheet.Cells[i + 2, 1].Value = acc.Id;
+                worksheet.Cells[i + 2, 2].Value = acc.Name;
+                worksheet.Cells[i + 2, 3].Value = acc.AccountType;
+                worksheet.Cells[i + 2, 4].Value = acc.ParentId?.ToString() ?? "Root";
             }
 
-            return null;
+            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+            var stream = new MemoryStream(package.GetAsByteArray());
+            return File(stream,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "ChartOfAccounts.xlsx");
         }
 
         private void LoadAccounts()
         {
-            AllAccounts = new List<Account>();
+            AllAccounts.Clear();
 
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            using var cmd = new SqlCommand("SELECT Id, Name, AccountType, ParentId FROM ChartOfAccounts", conn);
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand("SELECT Id, Name, AccountType, ParentId FROM ChartOfAccounts", conn))
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                AllAccounts.Add(new Account
                 {
-                    while (reader.Read())
-                    {
-                        AllAccounts.Add(new Account
-                        {
-                            Id = reader.GetInt32(0),
-                            Name = reader.GetString(1),
-                            AccountType = reader.GetString(2),
-                            ParentId = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3)
-                        });
-                    }
-                }
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    AccountType = reader.GetString(2),
+                    ParentId = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3)
+                });
             }
+        }
+
+        private void DeleteAccount(int id)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            using var cmd = new SqlCommand("sp_ManageChartOfAccounts", conn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Action", "DELETE");
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.Parameters.AddWithValue("@Name", DBNull.Value);
+            cmd.Parameters.AddWithValue("@ParentId", DBNull.Value);
+            cmd.Parameters.AddWithValue("@AccountType", DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
+
+        private Account? GetAccountById(int id)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            using var cmd = new SqlCommand("SELECT Id, Name, AccountType, ParentId FROM ChartOfAccounts WHERE Id = @Id", conn);
+            cmd.Parameters.AddWithValue("@Id", id);
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                return new Account
+                {
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    AccountType = reader.GetString(2),
+                    ParentId = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3)
+                };
+            }
+
+            return null;
         }
     }
 }

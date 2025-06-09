@@ -34,6 +34,8 @@ namespace MiniAccountSystemDB
             using (var scope = app.Services.CreateScope())
             {
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+
                 string[] roles = { "Admin", "Accountant", "Viewer" };
 
                 foreach (var role in roles)
@@ -42,6 +44,11 @@ namespace MiniAccountSystemDB
                     {
                         await roleManager.CreateAsync(new IdentityRole(role));
                     }
+                }
+                var user = await userManager.FindByEmailAsync("A@gmail.com"); // use your actual email
+                if (user != null && !await userManager.IsInRoleAsync(user, "Admin"))
+                {
+                    await userManager.AddToRoleAsync(user, "Admin");
                 }
             }
 
