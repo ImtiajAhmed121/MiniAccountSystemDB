@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Authorization; // ✅ Add this
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
@@ -7,6 +8,7 @@ using System.Data;
 
 namespace MiniAccountSystemDB.Pages
 {
+    [Authorize(Roles = "Admin,Accountant")] // ✅ Protect this page with role-based access
     public class ChartOfAccountsModel : PageModel
     {
         private readonly IConfiguration _configuration;
@@ -17,7 +19,7 @@ namespace MiniAccountSystemDB.Pages
             _configuration = configuration;
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
         }
-        //adding
+
         [BindProperty]
         public string ActionType { get; set; } = string.Empty;
 
@@ -26,6 +28,7 @@ namespace MiniAccountSystemDB.Pages
 
         [BindProperty]
         public int? DeleteId { get; set; }
+
         [BindProperty]
         public AccountInputModel Input { get; set; } = new AccountInputModel();
 
@@ -34,18 +37,16 @@ namespace MiniAccountSystemDB.Pages
         public class Account
         {
             public int Id { get; set; }
-            public string Name { get; set; } = String.Empty;
-            public string AccountType { get; set; } = String.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string AccountType { get; set; } = string.Empty;
             public int? ParentId { get; set; }
         }
 
         public class AccountInputModel
         {
-            public string Name { get; set; } = String.Empty;
-            public string AccountType { get; set; } = String.Empty;
-            public int? ParentId { get; set; } 
-           
-
+            public string Name { get; set; } = string.Empty;
+            public string AccountType { get; set; } = string.Empty;
+            public int? ParentId { get; set; }
         }
 
         public void OnGet()
@@ -69,13 +70,13 @@ namespace MiniAccountSystemDB.Pages
                     Input.Name = account.Name;
                     Input.AccountType = account.AccountType;
                     Input.ParentId = account.ParentId;
-                    EditId = account.Id; // Stay in form for update
+                    EditId = account.Id;
                 }
+
                 LoadAccounts();
                 return Page();
             }
 
-            // Default: Insert or Update
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
@@ -93,6 +94,7 @@ namespace MiniAccountSystemDB.Pages
 
             return RedirectToPage();
         }
+
         private void DeleteAccount(int id)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -128,16 +130,15 @@ namespace MiniAccountSystemDB.Pages
                                 Id = reader.GetInt32(0),
                                 Name = reader.GetString(1),
                                 AccountType = reader.GetString(2),
-                                ParentId = reader.IsDBNull(3) ? (int?)null : (int?)reader.GetInt32(3)
+                                ParentId = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3)
                             };
                         }
                     }
                 }
             }
+
             return null;
         }
-
-
 
         private void LoadAccounts()
         {
@@ -156,7 +157,7 @@ namespace MiniAccountSystemDB.Pages
                             Id = reader.GetInt32(0),
                             Name = reader.GetString(1),
                             AccountType = reader.GetString(2),
-                            ParentId = reader.IsDBNull(3) ? (int?)null : (int?)reader.GetInt32(3)
+                            ParentId = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3)
                         });
                     }
                 }

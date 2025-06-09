@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authorization;
+
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,6 +11,8 @@ using System.Data.SqlClient;
 
 namespace MiniAccountSystemDB.Pages
 {
+    [Authorize(Roles = "Admin,Accountant")]
+
     public class VoucherModel : PageModel
     {
         private readonly IConfiguration _configuration;

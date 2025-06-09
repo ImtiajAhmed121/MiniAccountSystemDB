@@ -11,12 +11,14 @@ namespace MiniAccountSystemDB
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add this INSIDE Main
+            // Developer Exception Page for EF
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+            // Connection String
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
+            // Register EF Core & Identity
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
@@ -27,21 +29,23 @@ namespace MiniAccountSystemDB
             builder.Services.AddRazorPages();
 
             var app = builder.Build();
-            // for roles
-            using(var scope = app.Services.CreateScope())
+
+            //Creating roles on startup
+            using (var scope = app.Services.CreateScope())
             {
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
                 string[] roles = { "Admin", "Accountant", "Viewer" };
+
                 foreach (var role in roles)
                 {
-                    if(!await roleManager.RoleExistsAsync(role))
+                    if (!await roleManager.RoleExistsAsync(role))
                     {
-                        await roleManager.CreateAsync(new IdentityRole(role));  
+                        await roleManager.CreateAsync(new IdentityRole(role));
                     }
                 }
             }
 
-
+            // Middleware pipeline
             if (app.Environment.IsDevelopment())
             {
                 app.UseMigrationsEndPoint();
@@ -62,8 +66,8 @@ namespace MiniAccountSystemDB
 
             app.MapRazorPages();
 
-            app.Run();
-            app.Run();
+            // Only ONE app.Run()!
+            await app.RunAsync();
         }
     }
 }

@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using MiniAccountSystemDB.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MiniAccountSystemDB.Pages.Accounts
 {
+    [Authorize(Roles = "Admin,Accountant")]
+
     public class IndexModel : PageModel
     {
         private readonly IConfiguration _configuration;
