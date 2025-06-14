@@ -12,42 +12,73 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MiniAccountSystemDB</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/MiniAccountSystemDB.styles.css" asp-append-version="true" />
+
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+
+     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body {
+            background-color: #012d36;
+            color: #b8c4c2;
+        }
+
+        a, .nav-link, .navbar-brand {
+            color: #36d7b7 !important;
+        }
+
+        .navbar {
+            background-color: #062f3f !important;
+        }
+
+        .footer {
+            background-color: #062f3f;
+            color: #9fb5b1;
+        }
+
+        .btn-primary {
+            background-color: #d4aa00;
+            border-color: #d4aa00;
+        }
+
+        .btn-primary:hover {
+            background-color: #b38e00;
+            border-color: #b38e00;
+        }
+
+        .table {
+            background-color: #0d3a45;
+            color: #ffffff;
+        }
+
+        input.form-control, select.form-control {
+            background-color: #0f3d4b;
+            color: #ffffff;
+            border: 1px solid #4e7e87;
+        }
+
+        input::placeholder {
+            color: #c3c3c3;
+        }
+    </style>
 </head>
-<body>
+<body class ="d-flex flex-column min-vh-100 bg-dark text-light">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">MiniAccountSystemDB</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
-                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-lg shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold" asp-page="/Index">MiniAccountSystemDB</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        @* <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
-                        </li> *@
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/ChartOfAccounts">Chart of Accounts</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Voucher">Voucher</a>
-                        </li>
-
-                        @* ✅ Only show this link if user is Admin *@
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link" asp-page="/ChartOfAccounts">Chart of Accounts</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-page="/Voucher">Voucher</a></li>
                         @if (isAdmin)
                         {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-page="/Admin/UserManagement">User Management</a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link" asp-page="/Admin/UserManagement">User Management</a></li>
                         }
-
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
-                        </li>
+                        <li class="nav-item"><a class="nav-link" asp-page="/Privacy">Privacy</a></li>
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>
@@ -55,21 +86,33 @@
         </nav>
     </header>
 
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - MiniAccountSystemDB - <a asp-area="" asp-page="/Privacy">Privacy</a>
+    <main class="container py-4 flex-grow-1">
+        @RenderBody()
+    </main>
+    <hr style="border-top: 1px solid #ccc; margin:0;"/> 
+    <footer class="footer text-muted border-top py-3" style="background-color: #012d36;">
+        <div class="container text-center text-light">
+            &copy; 2025 - MiniAccountSystemDB - 
+            <a asp-page="/Privacy" class="text-success text-decoration-none">Privacy</a>
         </div>
     </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <script>
+        $(function () {
+            @if (TempData["Success"] != null)
+            {
+                <text>toastr.success("@TempData["Success"]");</text>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <text>toastr.error("@TempData["Error"]");</text>
+            }
+        });
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

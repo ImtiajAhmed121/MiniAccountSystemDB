@@ -4,8 +4,26 @@
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <h5 class="display-4">Welcome to Mini Account System Db</h5>
-@*     <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
- *@
+<style>
+    .homepage-banner {
+        padding: 100px 0 60px 0;
+        text-align: center;
+        color: #fff;
+    }
+
+        .homepage-banner h1 {
+            font-size: 3rem;
+            color: #ffffff;
+        }
+
+        .homepage-banner p.description {
+            font-size: 1.25rem;
+            color: #45e6d1; /* visible color */
+            margin-top: 20px;
+        }
+</style>
+
+<div class="homepage-banner">
+    <h1>Welcome to Mini Account System DB</h1>
+    <p class="description">A simple accounting system built with ASP.NET Core Razor Pages</p>
 </div>
