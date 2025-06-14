@@ -1,4 +1,4 @@
-﻿// ✅ Complete and corrected VoucherModel with Export to Excel functionality
+﻿//VoucherModel with Export to Excel functionality
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

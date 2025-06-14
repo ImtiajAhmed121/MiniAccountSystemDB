@@ -1,0 +1,40 @@
+﻿@page
+@model MiniAccountSystemDB.Pages.Admin.UserManagementModel
+@{
+    ViewData["Title"] = "User Management";
+}
+
+<h2>User Management</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Current Role(s)</th>
+            <th>New Role</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.Email</td>
+                <td>@string.Join(", ", user.Roles)</td>
+                <td>
+                    <form method="post" asp-page-handler="AssignRole" class="d-flex">
+                        <select name="SelectedRole" class="form-control me-2" required>
+                            <option value="">--Select--</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Accountant">Accountant</option>
+                            <option value="Viewer">Viewer</option>
+                        </select>
+                        <input type="hidden" name="SelectedUserId" value="@user.Id" />
+                        <button type="submit" class="btn btn-primary">Assign</button>
+                    </form>
+                </td>
+                <td></td>
+            </tr>
+        }
+    </tbody>
+</table>

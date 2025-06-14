@@ -45,7 +45,7 @@ namespace MiniAccountSystemDB
                         await roleManager.CreateAsync(new IdentityRole(role));
                     }
                 }
-                var user = await userManager.FindByEmailAsync("A@gmail.com"); // use your actual email
+                var user = await userManager.FindByEmailAsync("A@gmail.com"); // using actual email
                 if (user != null && !await userManager.IsInRoleAsync(user, "Admin"))
                 {
                     await userManager.AddToRoleAsync(user, "Admin");
