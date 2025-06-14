@@ -45,3 +45,14 @@ input.form-control, select.form-control, textarea.form-control {
 input::placeholder {
     color: #c3c3c3;
 }
+input::placeholder {
+    color: #ffffff !important; /* Bright white placeholder text */
+    opacity: 1;  
+    font-weight: 500;
+}
+
+input {
+    background-color: #0d3a45 !important; /* Darker background */
+    color: #ffffff !important;  
+    border: 1px solid #3ba7c5;
+}
