@@ -60,7 +60,14 @@ namespace MiniAccountSystemDB.Pages
         {
             if (ActionType == "Delete" && DeleteId.HasValue)
             {
+                if (IsAccountUsedInVouchers(DeleteId.Value))
+                {
+                    TempData["Error"] = "Cannot delete this account because it is used in voucher entries.";
+                    return RedirectToPage();
+                }
+
                 DeleteAccount(DeleteId.Value);
+                TempData["Success"] = "Account deleted successfully.";
                 return RedirectToPage();
             }
 
@@ -94,6 +101,7 @@ namespace MiniAccountSystemDB.Pages
                 }
             }
 
+            TempData["Success"] = EditId.HasValue ? "Account updated successfully." : "Account created successfully.";
             return RedirectToPage();
         }
 
@@ -104,13 +112,11 @@ namespace MiniAccountSystemDB.Pages
             using var package = new ExcelPackage();
             var worksheet = package.Workbook.Worksheets.Add("ChartOfAccounts");
 
-            // Header row
             worksheet.Cells[1, 1].Value = "ID";
             worksheet.Cells[1, 2].Value = "Name";
             worksheet.Cells[1, 3].Value = "Account Type";
             worksheet.Cells[1, 4].Value = "Parent ID";
 
-            // Data rows
             for (int i = 0; i < AllAccounts.Count; i++)
             {
                 var acc = AllAccounts[i];
@@ -148,6 +154,19 @@ namespace MiniAccountSystemDB.Pages
                     ParentId = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3)
                 });
             }
+        }
+
+        private bool IsAccountUsedInVouchers(int accountId)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            string query = "SELECT COUNT(*) FROM VoucherEntries WHERE AccountId = @AccountId";
+            using var cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@AccountId", accountId);
+            int count = (int)cmd.ExecuteScalar();
+
+            return count > 0;
         }
 
         private void DeleteAccount(int id)
